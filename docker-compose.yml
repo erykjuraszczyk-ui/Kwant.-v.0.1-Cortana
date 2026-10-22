@@ -1,0 +1,15 @@
+services:
+  pkk:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      PKK_DB_PATH: /app/data/pkk.sqlite3
+      PKK_CHAT_PROVIDER: ${PKK_CHAT_PROVIDER:-rules}
+      PKK_CHAT_BASE_URL: ${PKK_CHAT_BASE_URL:-}
+      PKK_CHAT_MODEL: ${PKK_CHAT_MODEL:-}
+      PKK_CHAT_API_KEY: ${PKK_CHAT_API_KEY:-}
+      PKK_CHAT_TIMEOUT_SECONDS: ${PKK_CHAT_TIMEOUT_SECONDS:-35}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
