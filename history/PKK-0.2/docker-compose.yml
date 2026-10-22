@@ -1,0 +1,23 @@
+services:
+  pkk-api:
+    build: .
+    container_name: pkk-api
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      PKK_MODEL: yolo26n.pt
+      PKK_DEVICE: cpu
+      PKK_CONFIDENCE: "0.25"
+      PKK_MAX_DETECTIONS: "100"
+      YOLO_CONFIG_DIR: /models/ultralytics-config
+    volumes:
+      - pkk-model-cache:/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  pkk-model-cache:

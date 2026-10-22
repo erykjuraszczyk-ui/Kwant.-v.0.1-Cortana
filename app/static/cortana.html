@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07111d">
+<title>PKK 1.0 — Cortana</title>
+<style>
+:root{color-scheme:dark;--bg:#07111d;--panel:#0d2032;--line:#20415a;--cyan:#82ecff;--text:#e9f7ff;--muted:#9bb4c6;--warn:#ffd99a;--danger:#ffc1a8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#153955 0,#07111d 55%);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+main{max-width:980px;margin:0 auto;padding:22px 16px 42px}.head{display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);padding-bottom:18px}
+.orb{width:56px;height:56px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;border:1px solid #63d9ff;background:radial-gradient(circle at 35% 30%,#c6faff,#2072a0 45%,#061725 75%);box-shadow:0 0 28px #3ba6df55;font-size:25px}
+h1{font-size:clamp(22px,4vw,32px);margin:0}.sub{color:var(--muted);font-size:14px}.tag{margin-left:auto;border:1px solid var(--line);border-radius:100px;padding:5px 10px;color:var(--cyan);font-size:12px;white-space:nowrap}
+.status{margin:15px 0;padding:10px 13px;border:1px solid var(--line);border-radius:12px;background:#071a2a;color:var(--muted);font-size:13px}
+.statusline{display:flex;gap:8px;align-items:flex-start}.dot{width:8px;height:8px;border-radius:50%;background:#6ce5bb;display:inline-block;flex:0 0 auto;margin-top:6px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 255px;gap:14px;align-items:start}
+.chatcard,.sidecard{border:1px solid var(--line);border-radius:17px;background:#081a29dd;overflow:hidden}.chathead,.sidehead{padding:12px 15px;border-bottom:1px solid var(--line);font-size:13px;color:var(--cyan);letter-spacing:.04em;text-transform:uppercase}
+.log{display:flex;flex-direction:column;gap:12px;min-height:290px;max-height:55vh;overflow:auto;padding:16px}
+.msg{max-width:88%;padding:12px 15px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}.assistant{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-top-left-radius:4px}.user{align-self:flex-end;background:#143b54;border:1px solid #28627e;border-top-right-radius:4px}
+.meta{font-size:11px;color:var(--muted);margin-top:7px}.compose{border-top:1px solid var(--line);padding:12px;background:#081725}
+textarea{display:block;width:100%;resize:vertical;min-height:72px;max-height:210px;border:1px solid #284a61;border-radius:12px;background:#061321;color:var(--text);padding:12px;font:inherit;outline:none}textarea:focus{border-color:var(--cyan)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}button{border:1px solid #28627e;border-radius:10px;background:#113b55;color:var(--text);padding:9px 13px;font:inherit;cursor:pointer}button.primary{background:#15769a;border-color:#67d7f6;font-weight:600}button.secondary{background:transparent;border-color:var(--line);color:var(--muted)}button.danger{border-color:#8e5145;color:#ffc1a8;background:#361d1c}button:disabled{opacity:.5;cursor:wait}button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.voice-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--muted)}.toggle{display:flex;gap:7px;align-items:center;padding:7px 9px;border:1px solid var(--line);border-radius:10px}.toggle input{accent-color:#58cbe8}.mic-active{color:#ffc1a8!important;border-color:#b95d57!important;background:#3a201f!important}
+.sidebody{padding:13px;font-size:13px}.metric{padding:10px 0;border-bottom:1px solid #183449}.metric:last-child{border-bottom:0}.metriclabel{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.metricvalue{font-size:19px;margin-top:2px;overflow-wrap:anywhere}.sideactions{display:grid;gap:7px;margin-top:12px}.sideactions button{width:100%;text-align:left}
+.privacy{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.55}.notice{color:var(--warn)}.error{color:var(--danger)}
+footer{font-size:12px;color:var(--muted);margin-top:17px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.sidecard{order:-1}.sidebody{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric{border:1px solid #183449;border-radius:10px;padding:9px}.sideactions{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}.sideactions button{text-align:center}}
+@media(max-width:560px){main{padding:13px 9px}.tag{display:none}.msg{max-width:96%}.log{padding:12px;min-height:250px}.sidebody{padding:9px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body><main>
+<header class="head">
+  <div class="orb" aria-hidden="true">◈</div>
+  <div><h1>Cortana · PKK 1.0</h1><div class="sub">Zintegrowany prototyp percepcji, pamięci i dialogu</div></div>
+  <div class="tag">PKK CORE 1.0</div>
+</header>
+<div class="status"><div class="statusline"><span class="dot"></span><span id="status">Sprawdzam komponenty systemu…</span></div></div>
+<div class="grid">
+<section class="chatcard" aria-label="Rozmowa z Cortaną">
+  <div class="chathead">Kanał dialogowy</div>
+  <div class="log" id="log" aria-live="polite">
+    <div class="msg assistant">Witaj. Jestem warstwą dialogową Cortany w PKK 1.0. Mogę wyjaśniać dane zapisane w modelu świata i rekomendacje systemu. Możesz pisać lub — jeśli Twoja przeglądarka to obsługuje — podyktować wiadomość po polsku.</div>
+  </div>
+  <form class="compose" id="form">
+    <textarea id="message" maxlength="4000" placeholder="Napisz lub podyktuj wiadomość…" required aria-label="Wiadomość do Cortany"></textarea>
+    <div class="actions">
+      <button class="primary" id="send" type="submit">Wyślij</button>
+      <button class="secondary" id="mic" type="button" title="Rozpoznawanie mowy zależy od przeglądarki">🎙 Mów</button>
+      <button class="secondary" id="stopSpeech" type="button">Zatrzymaj głos</button>
+    </div>
+    <div class="voice-controls">
+      <label class="toggle"><input type="checkbox" id="speak"> Czytaj odpowiedzi na głos</label>
+      <span id="voiceStatus">Sprawdzam obsługę głosu…</span>
+    </div>
+  </form>
+</section>
+<aside class="sidecard">
+  <div class="sidehead">Stan PKK</div>
+  <div class="sidebody">
+    <div class="metric"><div class="metriclabel">Wersja</div><div class="metricvalue" id="version">—</div></div>
+    <div class="metric"><div class="metriclabel">Obiekty</div><div class="metricvalue" id="objects">—</div></div>
+    <div class="metric"><div class="metriclabel">Zapis obserwacji</div><div class="metricvalue" id="observations">—</div></div>
+    <div class="metric"><div class="metriclabel">Dostawca czatu</div><div class="metricvalue" id="provider">—</div></div>
+    <div class="metric"><div class="metriclabel">Modalności w oknie</div><div class="metricvalue" id="modalities">—</div></div>
+    <div class="metric"><div class="metriclabel">Rekomendacja</div><div class="metricvalue" id="decision">—</div></div>
+    <div class="sideactions">
+      <button class="secondary" id="refresh" type="button">↻ Odśwież status</button>
+      <button class="secondary" id="new" type="button">＋ Nowa rozmowa</button>
+      <button class="danger" id="delete" type="button">Usuń historię rozmowy</button>
+    </div>
+  </div>
+</aside>
+</div>
+<div class="privacy"><strong>Prywatność głosu:</strong> mikrofon uruchamia się dopiero po kliknięciu „Mów”. Rozpoznawanie korzysta z Web Speech API, jeśli jest dostępne; przeglądarka może wysyłać audio do usługi dostawcy. W tym panelu surowe audio nie jest wysyłane do backendu PKK, a samo rozpoznawanie nie jest gwarantowanie lokalne. Odczytywanie odpowiedzi używa syntezy mowy przeglądarki. Historia czatu jest zapisywana lokalnie w SQLite.</div>
+<footer>PKK 1.0 nadal używa klasycznych algorytmów AI. Panel głosowy jest opcjonalny i zależny od obsługi przeglądarki; system nie wykonuje działań zewnętrznych.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const log=$('log'), input=$('message'), send=$('send'), mic=$('mic');
+let conversationId=null, recognition=null, listening=false;
+function addMessage(role,text,meta=''){
+ const el=document.createElement('div');el.className='msg '+role;el.textContent=text;
+ if(meta){const m=document.createElement('div');m.className='meta';m.textContent=meta;el.appendChild(m)}
+ log.appendChild(el);log.scrollTop=log.scrollHeight;return el;
+}
+function speakText(text){
+ if(!$('speak').checked||!('speechSynthesis'in window))return;
+ window.speechSynthesis.cancel();
+ const utterance=new SpeechSynthesisUtterance(text);utterance.lang='pl-PL';utterance.rate=1;
+ const voices=window.speechSynthesis.getVoices();
+ const polish=voices.find(v=>v.lang&&v.lang.toLowerCase().startsWith('pl'));
+ if(polish)utterance.voice=polish;
+ window.speechSynthesis.speak(utterance);
+}
+function setupSpeech(){
+ const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!Recognition){
+   mic.disabled=true;mic.title='Ta przeglądarka nie obsługuje Web Speech API.';
+   $('voiceStatus').textContent='Dyktowanie niedostępne';$('voiceStatus').classList.add('notice');
+ }else{
+   recognition=new Recognition();recognition.lang='pl-PL';recognition.interimResults=true;recognition.continuous=false;
+   recognition.onstart=()=>{listening=true;mic.textContent='■ Zatrzymaj słuchanie';mic.classList.add('mic-active');$('voiceStatus').textContent='Słucham — mów teraz…'};
+   recognition.onresult=e=>{
+     let interim='',finalText='';
+     for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=t;else interim+=t}
+     if(finalText)input.value=(input.value+' '+finalText).trim();
+     $('voiceStatus').textContent=finalText?'Rozpoznano tekst — sprawdź go przed wysłaniem.':('Rozpoznaję: '+interim);
+   };
+   recognition.onerror=e=>{$('voiceStatus').textContent='Błąd rozpoznawania: '+e.error;};
+   recognition.onend=()=>{listening=false;mic.textContent='🎙 Mów';mic.classList.remove('mic-active');if(!$('voiceStatus').textContent.startsWith('Rozpoznano'))$('voiceStatus').textContent='Mikrofon nieaktywny'};
+ }
+ if(!('speechSynthesis'in window)){$('speak').disabled=true;$('voiceStatus').textContent='Synteza mowy niedostępna';}
+ else window.speechSynthesis.getVoices();
+}
+mic.addEventListener('click',()=>{
+ if(!recognition)return;
+ if(listening){recognition.stop();return}
+ try{window.speechSynthesis?.cancel();recognition.start()}catch(e){$('voiceStatus').textContent='Nie można rozpocząć nasłuchiwania. Sprawdź uprawnienia mikrofonu.'}
+});
+$('stopSpeech').addEventListener('click',()=>{if('speechSynthesis'in window)window.speechSynthesis.cancel();if(listening&&recognition)recognition.stop()});
+$('form').addEventListener('submit',async e=>{
+ e.preventDefault();const message=input.value.trim();if(!message)return;
+ addMessage('user',message);input.value='';send.disabled=true;mic.disabled=true;const wait=addMessage('assistant','Analizuję kontekst PKK…');
+ try{
+   const r=await fetch('/cortana/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,conversation_id:conversationId})});
+   const d=await r.json();if(!r.ok)throw new Error(d.detail||'Błąd API');
+   conversationId=d.conversation_id;wait.textContent=d.answer;
+   const m=document.createElement('div');m.className='meta';m.textContent=`Provider: ${d.provider_used} · obiekty: ${d.context_snapshot.world_object_count}${d.fallback_used?' · tryb awaryjny':''}`;wait.appendChild(m);
+   if(d.fallback_reason){const f=document.createElement('div');f.className='meta';f.textContent=d.fallback_reason;wait.appendChild(f)}
+   speakText(d.answer);refreshStatus(false);
+ }catch(err){wait.textContent='Błąd: '+err.message;wait.classList.add('error')}
+ finally{send.disabled=false;mic.disabled=!recognition;log.scrollTop=log.scrollHeight;input.focus()}
+});
+$('new').addEventListener('click',()=>{if(listening&&recognition)recognition.stop();if('speechSynthesis'in window)window.speechSynthesis.cancel();conversationId=null;log.innerHTML='';addMessage('assistant','Nowa rozmowa rozpoczęta. Kontekst pochodzi z aktualnego stanu PKK.');input.focus()});
+$('delete').addEventListener('click',async()=>{
+ if(!conversationId){addMessage('assistant','Nie ma zapisanej rozmowy do usunięcia.');return}
+ if(!confirm('Usunąć historię tej rozmowy z lokalnej bazy?'))return;
+ try{const r=await fetch('/cortana/conversations/'+encodeURIComponent(conversationId),{method:'DELETE'});const d=await r.json();conversationId=null;log.innerHTML='';addMessage('assistant',d.status==='deleted'?'Historia tej rozmowy została usunięta z lokalnej bazy.':'Nie znaleziono zapisanej historii.')}
+ catch(e){addMessage('assistant','Nie udało się usunąć historii.')}
+});
+async function refreshStatus(showErrors=true){
+ try{
+  const r=await fetch('/system/status');if(!r.ok)throw new Error('API niedostępne');const d=await r.json();
+  $('version').textContent=d.version;$('objects').textContent=d.storage.objects;$('observations').textContent=d.storage.observations;
+  $('provider').textContent=d.chat.provider+ (d.chat.local_only?' · lokalnie':' · zewnętrzny/konfigurowany');
+  $('modalities').textContent=d.context.modalities_present.length?d.context.modalities_present.join(', '):'brak danych';
+  $('decision').textContent=d.recommendation.action;
+  $('status').textContent=`System gotowy · ${d.components.perception_api}, pamięć SQLite, fuzja, wnioskowanie i dialog · rekomendacja: ${d.recommendation.action}`;
+ }catch(e){if(showErrors)$('status').textContent='Nie udało się pobrać pełnego statusu PKK. Sprawdź, czy backend działa.'}
+}
+$('refresh').addEventListener('click',()=>refreshStatus());
+setupSpeech();refreshStatus();
+</script></body></html>

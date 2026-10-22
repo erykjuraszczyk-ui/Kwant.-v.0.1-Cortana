@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>PKK 0.3 — percepcja na żywo</title>
+  <style>
+    :root { color-scheme: dark; --bg: #07111c; --panel: #101f2e; --line: #24445a; --cyan: #7de8ff; --muted: #a8bdca; --green: #8af0c0; --red: #ff9797; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(ellipse at top, #16344b 0, var(--bg) 58%); color: #eff8fc; font: 16px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; min-height: 100vh; }
+    main { width: min(1100px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 48px; }
+    header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+    .orb { flex: 0 0 50px; width: 50px; height: 50px; border: 1px solid #5bdcf8; border-radius: 50%; display: grid; place-items: center; color: var(--cyan); font-size: 26px; box-shadow: 0 0 28px #32c4ed2b, inset 0 0 20px #32c4ed1c; }
+    h1 { margin: 0; font-size: clamp(1.4rem, 4vw, 2rem); letter-spacing: .02em; }
+    .subtitle { margin: 3px 0 0; color: var(--muted); font-size: .94rem; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(265px, .8fr); gap: 16px; align-items: start; }
+    .panel { background: #0b1926e8; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 55px #0003; }
+    .panel-head { padding: 14px 17px; border-bottom: 1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap: 10px; }
+    .panel-head h2 { margin: 0; font-size: 1rem; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #36586d; color: var(--muted); border-radius: 999px; padding: 4px 10px; font-size: .78rem; white-space: nowrap; }
+    .dot { width: 7px; height: 7px; background: #718393; border-radius: 50%; }
+    .pill.live { color: var(--green); border-color: #32755e; } .pill.live .dot { background: var(--green); box-shadow: 0 0 10px #8af0c0; }
+    .screen { position: relative; background: #02060a; min-height: 220px; }
+    video { display: block; width: 100%; height: auto; min-height: 220px; max-height: 70vh; object-fit: contain; }
+    #overlay { position: absolute; top: 0; left: 0; width: 100%; height: auto; pointer-events: none; }
+    .placeholder { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 20px; color: #91aab9; }
+    .placeholder strong { color: #dff8ff; font-size: 1.05rem; }
+    .controls { padding: 17px; display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: .85rem; }
+    select, input, button { font: inherit; }
+    select { width: 100%; background: #10283a; border: 1px solid #315369; color: #edf8ff; border-radius: 10px; padding: 10px; }
+    .buttons { display: flex; gap: 10px; grid-column: 1 / -1; }
+    button { border: 1px solid #3e9fb9; border-radius: 10px; padding: 10px 15px; font-weight: 650; cursor: pointer; flex: 1; }
+    button.primary { background: linear-gradient(120deg, #7de8ff, #8ccdf5); color: #051521; }
+    button.secondary { background: #12283a; color: #e6f7ff; border-color: #36566a; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .note { margin: 0; padding: 0 17px 17px; color: var(--muted); font-size: .83rem; }
+    .stats { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
+    .stat { padding: 12px; border: 1px solid #203c50; border-radius: 12px; background: #0c1b28; }
+    .stat span { display:block; color: var(--muted); font-size:.8rem; }
+    .stat strong { display:block; color: var(--cyan); font-size:1.28rem; margin-top:3px; font-variant-numeric: tabular-nums; }
+    #status { margin: 0 15px 15px; border-radius: 10px; padding: 10px 12px; background: #122635; color: #c1d5e0; font-size: .87rem; overflow-wrap: anywhere; }
+    #status.error { color: var(--red); background: #321c25; }
+    .detections { border-top: 1px solid var(--line); padding: 14px 15px 17px; }
+    .detections h3 { margin: 0 0 10px; font-size: .93rem; }
+    #results { display: flex; flex-wrap: wrap; gap: 7px; }
+    .tag { border: 1px solid #29738a; background: #0c3041; color: #a4efff; border-radius: 8px; padding: 5px 9px; font-size: .82rem; }
+    .empty { color: #8ea7b7; font-size: .85rem; }
+    .privacy { color: #9fb7c5; margin: 16px 2px 0; font-size: .82rem; }
+    @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } main { width: min(100% - 20px, 1100px); padding-top: 18px; } .screen, video { min-height: 180px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="orb" aria-hidden="true">◉</div>
+    <div><h1>PKK 0.3 — percepcja na żywo</h1><p class="subtitle">Kamera przeglądarki · klasyczna detekcja AI · przetwarzanie klatka po klatce</p></div>
+  </header>
+  <div class="layout">
+    <section class="panel" aria-label="Podgląd kamery">
+      <div class="panel-head"><h2>Podgląd i detekcje</h2><span id="livePill" class="pill"><span class="dot"></span><span id="liveText">Kamera wyłączona</span></span></div>
+      <div class="screen" id="screen">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay" aria-hidden="true"></canvas>
+        <div id="placeholder" class="placeholder"><div><strong>Kamera nie została uruchomiona</strong><br>Wybierz „Start kamery” i przyznaj przeglądarce dostęp.</div></div>
+      </div>
+      <div class="controls">
+        <label>Odstęp między analizami
+          <select id="interval"><option value="800">800 ms — intensywnie</option><option value="1200" selected>1,2 s — zalecane</option><option value="2000">2 s — oszczędny CPU</option><option value="3000">3 s — wolniej</option></select>
+        </label>
+        <label>Próg confidence
+          <select id="confidence"><option value="0.15">0,15 — więcej wykryć</option><option value="0.25" selected>0,25 — domyślny</option><option value="0.4">0,40</option><option value="0.6">0,60 — bardziej selektywnie</option></select>
+        </label>
+        <div class="buttons"><button id="start" class="primary">▶ Start kamery</button><button id="stop" class="secondary" disabled>■ Zatrzymaj</button></div>
+      </div>
+      <p class="note">Analizowana jest zmniejszona klatka do maksymalnie 960 px na dłuższym boku. Następna analiza startuje dopiero po zakończeniu poprzedniej — to ogranicza kolejkę żądań.</p>
+    </section>
+    <aside class="panel" aria-label="Wyniki analizy">
+      <div class="panel-head"><h2>Telemetria percepcji</h2><span class="pill">PKK 0.3.0</span></div>
+      <div class="stats">
+        <div class="stat"><span>Wykryte obiekty</span><strong id="count">—</strong></div>
+        <div class="stat"><span>Czas detektora</span><strong id="latency">—</strong></div>
+        <div class="stat"><span>Rozmiar klatki</span><strong id="resolution">—</strong></div>
+        <div class="stat"><span>Ostatnia odpowiedź</span><strong id="lastFrame">—</strong></div>
+      </div>
+      <p id="status" role="status" aria-live="polite">Gotowe. Kamera uruchamia się wyłącznie po naciśnięciu przycisku.</p>
+      <div class="detections"><h3>Rozpoznane etykiety</h3><div id="results"><span class="empty">Brak danych — uruchom analizę.</span></div></div>
+    </aside>
+  </div>
+  <p class="privacy"><strong>Prywatność:</strong> obraz z kamery jest wysyłany do uruchomionego przez Ciebie API w celu analizy. Ten prototyp nie zapisuje klatek na dysku i nie prowadzi historii obrazu. Zatrzymanie kamery kończy dalsze przechwytywanie. Nie udostępniaj API publicznie bez uwierzytelniania i HTTPS.</p>
+</main>
+<script>
+(() => {
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
+  const ctx = overlay.getContext('2d');
+  const placeholder = document.getElementById('placeholder');
+  const startButton = document.getElementById('start');
+  const stopButton = document.getElementById('stop');
+  const statusBox = document.getElementById('status');
+  const pill = document.getElementById('livePill');
+  const liveText = document.getElementById('liveText');
+  const resultsBox = document.getElementById('results');
+  const capture = document.createElement('canvas');
+  const captureCtx = capture.getContext('2d', { willReadFrequently: false });
+  let stream = null;
+  let running = false;
+  let timer = null;
+  let requestCount = 0;
+  let lastRequestStarted = 0;
+
+  function setStatus(message, isError = false) {
+    statusBox.textContent = message;
+    statusBox.classList.toggle('error', isError);
+  }
+  function setLive(isLive) {
+    pill.classList.toggle('live', isLive);
+    liveText.textContent = isLive ? 'Analiza aktywna' : 'Kamera wyłączona';
+    startButton.disabled = isLive;
+    stopButton.disabled = !isLive;
+  }
+  function clearOverlay() {
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+  }
+  function renderDetections(detections) {
+    clearOverlay();
+    ctx.lineWidth = Math.max(2, overlay.width / 480);
+    ctx.font = `600 ${Math.max(13, overlay.width / 58)}px system-ui, sans-serif`;
+    ctx.textBaseline = 'top';
+    detections.forEach((item) => {
+      const b = item.bbox;
+      const x = Math.max(0, Math.min(overlay.width, b.x1));
+      const y = Math.max(0, Math.min(overlay.height, b.y1));
+      const w = Math.max(0, Math.min(overlay.width - x, b.x2 - b.x1));
+      const h = Math.max(0, Math.min(overlay.height - y, b.y2 - b.y1));
+      ctx.strokeStyle = '#70eeff';
+      ctx.shadowColor = '#2bdcff';
+      ctx.shadowBlur = 8;
+      ctx.strokeRect(x, y, w, h);
+      const label = `${item.label} ${(item.confidence * 100).toFixed(0)}%`;
+      const textWidth = ctx.measureText(label).width;
+      const labelY = Math.max(0, y - Math.max(23, overlay.width / 40));
+      ctx.fillStyle = '#0a2838eF';
+      ctx.fillRect(x, labelY, textWidth + 12, Math.max(23, overlay.width / 40));
+      ctx.fillStyle = '#d6fbff';
+      ctx.fillText(label, x + 6, labelY + 4);
+      ctx.shadowBlur = 0;
+    });
+    resultsBox.replaceChildren();
+    if (!detections.length) {
+      const empty = document.createElement('span'); empty.className = 'empty'; empty.textContent = 'Model nie zwrócił wykryć dla tej klatki.'; resultsBox.append(empty); return;
+    }
+    detections.forEach((item) => {
+      const tag = document.createElement('span'); tag.className = 'tag';
+      tag.textContent = `${item.label} · ${(item.confidence * 100).toFixed(0)}%`;
+      resultsBox.append(tag);
+    });
+  }
+  function prepareFrame() {
+    if (!video.videoWidth || !video.videoHeight) return false;
+    const scale = Math.min(1, 960 / Math.max(video.videoWidth, video.videoHeight));
+    capture.width = Math.max(1, Math.round(video.videoWidth * scale));
+    capture.height = Math.max(1, Math.round(video.videoHeight * scale));
+    overlay.width = capture.width;
+    overlay.height = capture.height;
+    captureCtx.drawImage(video, 0, 0, capture.width, capture.height);
+    return true;
+  }
+  async function analyseFrame() {
+    if (!running) return;
+    try {
+      if (!prepareFrame()) throw new Error('Oczekiwanie na pierwszą klatkę kamery.');
+      const blob = await new Promise((resolve, reject) => capture.toBlob((value) => value ? resolve(value) : reject(new Error('Nie udało się zakodować klatki.')), 'image/jpeg', 0.78));
+      const form = new FormData();
+      form.append('file', blob, 'camera-frame.jpg');
+      const confidence = document.getElementById('confidence').value;
+      const url = `/perception/objects?confidence=${encodeURIComponent(confidence)}`;
+      lastRequestStarted = performance.now();
+      const response = await fetch(url, { method: 'POST', body: form, cache: 'no-store' });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || payload.detail || `API zwróciło HTTP ${response.status}.`);
+      if (!running) return;
+      renderDetections(payload.detections || []);
+      requestCount += 1;
+      document.getElementById('count').textContent = String(payload.count ?? 0);
+      document.getElementById('latency').textContent = `${Math.round(payload.processing_ms ?? (performance.now() - lastRequestStarted))} ms`;
+      document.getElementById('resolution').textContent = `${payload.image.width}×${payload.image.height}`;
+      document.getElementById('lastFrame').textContent = String(requestCount);
+      setStatus(`Analiza zakończona. Model: ${payload.model}; urządzenie: ${payload.device}.`);
+    } catch (error) {
+      if (running) setStatus(error?.message || 'Nieznany błąd analizy.', true);
+    } finally {
+      if (running) {
+        const interval = Number(document.getElementById('interval').value) || 1200;
+        timer = window.setTimeout(analyseFrame, interval);
+      }
+    }
+  }
+  async function start() {
+    if (running) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setStatus('Ta przeglądarka nie udostępnia getUserMedia. Otwórz adres przez localhost lub HTTPS.', true); return;
+    }
+    startButton.disabled = true;
+    setStatus('Prośba o dostęp do kamery…');
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: { ideal: 'environment' } }, audio: false });
+      video.srcObject = stream;
+      await video.play();
+      await new Promise((resolve) => {
+        if (video.videoWidth) return resolve();
+        video.addEventListener('loadedmetadata', resolve, { once: true });
+      });
+      running = true;
+      placeholder.hidden = true;
+      requestCount = 0;
+      setLive(true);
+      setStatus('Kamera uruchomiona. Pierwsza analiza może trwać dłużej, ponieważ model może ładować wagi.');
+      analyseFrame();
+    } catch (error) {
+      stop(false);
+      const name = error?.name || '';
+      const message = name === 'NotAllowedError' ? 'Brak zgody na użycie kamery. Zezwól przeglądarce na dostęp i spróbuj ponownie.' : name === 'NotFoundError' ? 'Nie znaleziono kamery podłączonej do urządzenia.' : (error?.message || 'Nie udało się uruchomić kamery.');
+      setStatus(message, true);
+      startButton.disabled = false;
+    }
+  }
+  function stop(showStatus = true) {
+    running = false;
+    if (timer !== null) window.clearTimeout(timer);
+    timer = null;
+    if (stream) stream.getTracks().forEach((track) => track.stop());
+    stream = null;
+    video.srcObject = null;
+    clearOverlay();
+    placeholder.hidden = false;
+    setLive(false);
+    if (showStatus) setStatus('Kamera zatrzymana. Nie będą wysyłane kolejne klatki.');
+  }
+  startButton.addEventListener('click', start);
+  stopButton.addEventListener('click', () => stop());
+  window.addEventListener('pagehide', () => stop(false));
+})();
+</script>
+</body>
+</html>

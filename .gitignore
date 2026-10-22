@@ -1,0 +1,14 @@
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.env
+*.csv
+data/*.sqlite3
+data/*.sqlite
+data/*.db
+data/*-shm
+data/*-wal
+*.pt
+*.onnx

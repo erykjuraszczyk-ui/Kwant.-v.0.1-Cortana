@@ -1,0 +1,12 @@
+services:
+  pkk:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      PKK_DB_PATH: /app/data/pkk.sqlite3
+      PKK_STALE_AFTER_SECONDS: "5"
+      PKK_MOVEMENT_THRESHOLD: "0.03"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PKK 0.9 — Cortana</title>
+<style>
+:root{color-scheme:dark;--bg:#07111d;--panel:#0d2032;--line:#20415a;--cyan:#82ecff;--text:#e9f7ff;--muted:#9bb4c6}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#153955 0,#07111d 55%);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+main{max-width:920px;margin:0 auto;padding:24px 16px 42px}.head{display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);padding-bottom:18px}
+.orb{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;border:1px solid #63d9ff;background:radial-gradient(circle at 35% 30%,#c6faff,#2072a0 45%,#061725 75%);box-shadow:0 0 28px #3ba6df55;font-size:25px}
+h1{font-size:clamp(22px,4vw,32px);margin:0}.sub{color:var(--muted);font-size:14px}.tag{margin-left:auto;border:1px solid var(--line);border-radius:100px;padding:5px 10px;color:var(--cyan);font-size:12px}
+.status{margin:16px 0;padding:10px 13px;border:1px solid var(--line);border-radius:12px;background:#071a2a;color:var(--muted);font-size:13px}
+.log{display:flex;flex-direction:column;gap:12px;min-height:290px;max-height:55vh;overflow:auto;padding:6px 2px 18px}
+.msg{max-width:85%;padding:12px 15px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}.assistant{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-top-left-radius:4px}.user{align-self:flex-end;background:#143b54;border:1px solid #28627e;border-top-right-radius:4px}
+.meta{font-size:11px;color:var(--muted);margin-top:7px}.compose{border:1px solid var(--line);background:#081a29;padding:12px;border-radius:17px}
+textarea{display:block;width:100%;resize:vertical;min-height:72px;max-height:210px;border:1px solid #284a61;border-radius:12px;background:#061321;color:var(--text);padding:12px;font:inherit;outline:none}textarea:focus{border-color:var(--cyan)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}button{border:1px solid #28627e;border-radius:10px;background:#113b55;color:var(--text);padding:9px 14px;font:inherit;cursor:pointer}button.primary{background:#15769a;border-color:#67d7f6;font-weight:600}button.secondary{background:transparent;border-color:var(--line);color:var(--muted)}button:disabled{opacity:.55;cursor:wait}
+.foot{font-size:12px;color:var(--muted);margin-top:15px}.error{color:#ffc1a8}
+@media(max-width:560px){main{padding:14px 10px}.tag{display:none}.msg{max-width:94%}}
+</style>
+</head>
+<body><main>
+<header class="head"><div class="orb" aria-hidden="true">◈</div><div><h1>Cortana · PKK 0.9</h1><div class="sub">Warstwa dialogowa i kontekst percepcyjny</div></div><div class="tag">BACKEND SAFE MODE</div></header>
+<div class="status" id="status">Sprawdzam konfigurację…</div>
+<section class="log" id="log" aria-live="polite">
+<div class="msg assistant">Witaj. Jestem warstwą dialogową Cortany w PKK. Mogę korzystać z zapisanych obserwacji i rekomendacji. W trybie lokalnym odpowiedzi są ograniczone; pełny model językowy wymaga konfiguracji backendu.</div>
+</section>
+<form class="compose" id="form">
+<textarea id="message" maxlength="4000" placeholder="Napisz wiadomość do Cortany…" required></textarea>
+<div class="actions"><button class="primary" id="send" type="submit">Wyślij</button><button class="secondary" id="new" type="button">Nowa rozmowa</button><button class="secondary" id="delete" type="button">Usuń zapisaną rozmowę</button></div>
+</form>
+<div class="foot">Klucz API nigdy nie jest przechowywany w przeglądarce. Jeśli wybierzesz zewnętrznego dostawcę modelu, wiadomość i ograniczone metadane PKK mogą zostać do niego wysłane. Historia jest zapisywana lokalnie w SQLite.</div>
+</main>
+<script>
+const log=document.getElementById('log'), input=document.getElementById('message'), send=document.getElementById('send');
+let conversationId=null;
+function addMessage(role,text,meta=''){const el=document.createElement('div');el.className='msg '+role;el.textContent=text;if(meta){const m=document.createElement('div');m.className='meta';m.textContent=meta;el.appendChild(m)}log.appendChild(el);log.scrollTop=log.scrollHeight;return el}
+async function loadStatus(){try{const r=await fetch('/cortana/status');const d=await r.json();document.getElementById('status').textContent=`Dostawca: ${d.configured_provider} · Model: ${d.model||'tryb lokalny'} · Historia: SQLite · ${d.local_only?'bez wysyłania do zewnętrznego modelu':'wiadomości i wybrane metadane mogą opuścić komputer'}`}catch(e){document.getElementById('status').textContent='Nie można sprawdzić stanu backendu.'}}
+document.getElementById('form').addEventListener('submit',async e=>{e.preventDefault();const message=input.value.trim();if(!message)return;addMessage('user',message);input.value='';send.disabled=true;const wait=addMessage('assistant','Analizuję…');try{const r=await fetch('/cortana/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,conversation_id:conversationId})});const d=await r.json();if(!r.ok)throw new Error(d.detail||'Błąd API');conversationId=d.conversation_id;wait.textContent=d.answer;const m=document.createElement('div');m.className='meta';m.textContent=`Dostawca: ${d.provider_used}${d.fallback_used?' · użyto trybu awaryjnego':''} · obiekty: ${d.context_snapshot.world_object_count}`;wait.appendChild(m);if(d.fallback_reason){const f=document.createElement('div');f.className='meta';f.textContent=d.fallback_reason;wait.appendChild(f)}}catch(err){wait.textContent='Błąd: '+err.message;wait.classList.add('error')}finally{send.disabled=false;log.scrollTop=log.scrollHeight;input.focus()}});
+document.getElementById('new').addEventListener('click',()=>{conversationId=null;log.innerHTML='';addMessage('assistant','Nowa rozmowa rozpoczęta. Kontekst pochodzi z aktualnego stanu PKK.');input.focus()});
+document.getElementById('delete').addEventListener('click',async()=>{if(!conversationId){addMessage('assistant','Nie ma zapisanej rozmowy do usunięcia.');return}try{const r=await fetch('/cortana/conversations/'+encodeURIComponent(conversationId),{method:'DELETE'});const d=await r.json();conversationId=null;log.innerHTML='';addMessage('assistant',d.status==='deleted'?'Historia tej rozmowy została usunięta z lokalnej bazy.':'Nie znaleziono zapisanej historii.')}catch(e){addMessage('assistant','Nie udało się usunąć historii.')}});
+loadStatus();
+</script></body></html>
